@@ -36,7 +36,8 @@ import (
 	"github.com/ledgerwatch/erigon/turbo/stages/headerdownload"
 )
 
-func SendPayloadStatus(hd *headerdownload.HeaderDownload, headBlockHash libcommon.Hash, err error) {
+func SendPayloadStatus(hd *headerdownload.HeaderDownload, headBlockHash libcommon.Hash, err error, canRunInOne bool) {
+	log.Info("[SPIDERMAN] stageloop 40 SendPayloadStatus ")
 	if pendingPayloadStatus := hd.GetPendingPayloadStatus(); pendingPayloadStatus != nil {
 		if err != nil {
 			hd.PayloadStatusCh <- engineapi.PayloadStatus{CriticalError: err}
@@ -50,6 +51,9 @@ func SendPayloadStatus(hd *headerdownload.HeaderDownload, headBlockHash libcommo
 			var status remote.EngineStatus
 			if headBlockHash == pendingPayloadHash {
 				status = remote.EngineStatus_VALID
+				if !canRunInOne {
+					status = remote.EngineStatus_SYNCING
+				}
 			} else {
 				log.Warn("Failed to execute pending payload", "pendingPayload", pendingPayloadHash, "headBlock", headBlockHash)
 				status = remote.EngineStatus_INVALID
@@ -77,6 +81,7 @@ func StageLoop(ctx context.Context,
 ) {
 	defer close(waitForDone)
 	initialCycle := true
+	log.Info("[SPIDERMAN] stageloop 80")
 
 	for {
 		start := time.Now()
@@ -89,9 +94,10 @@ func StageLoop(ctx context.Context,
 		}
 
 		// Estimate the current top height seen from the peer
-		err := StageLoopStep(ctx, db, nil, sync, initialCycle, logger, blockReader, hook)
+		err, canRunInOne := StageLoopStep(ctx, db, nil, sync, initialCycle, logger, blockReader, hook)
 		db.View(ctx, func(tx kv.Tx) error {
-			SendPayloadStatus(hd, rawdb.ReadHeadBlockHash(tx), err)
+			log.Info("[SPIDERMAN] stageloop 95 db.View cb - possible culprit")
+			SendPayloadStatus(hd, rawdb.ReadHeadBlockHash(tx), err, canRunInOne)
 			return nil
 		})
 
@@ -124,17 +130,18 @@ func StageLoop(ctx context.Context,
 	}
 }
 
-func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync.Sync, initialCycle bool, logger log.Logger, blockReader services.FullBlockReader, hook *Hook) (err error) {
+func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync.Sync, initialCycle bool, logger log.Logger, blockReader services.FullBlockReader, hook *Hook) (err error, canRunInOne bool) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = fmt.Errorf("%+v, trace: %s", rec, dbg.Stack())
 		}
 	}() // avoid crash because Erigon's core does many things
+	log.Info("[SPIDERMAN] stageloop stageLoopStep")
 
 	externalTx := tx != nil
 	finishProgressBefore, headersProgressBefore, err := stagesHeadersAndFinish(db, tx)
 	if err != nil {
-		return err
+		return err, true
 	}
 	// Sync from scratch must be able Commit partial progress
 	// In all other cases - process blocks batch in 1 RwTx
@@ -144,6 +151,8 @@ func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync
 	if externalTx {
 		canRunCycleInOneTransaction = true
 	}
+	log.Info("[SPIDERMAN] stageloop L149 ", "canRunCycleInOneTransaction", canRunCycleInOneTransaction)
+
 
 	// Main steps:
 	// - process new blocks
@@ -155,19 +164,19 @@ func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync
 	if canRunCycleInOneTransaction && !externalTx {
 		tx, err = db.BeginRwNosync(ctx)
 		if err != nil {
-			return err
+			return err, canRunCycleInOneTransaction
 		}
 		defer tx.Rollback()
 	}
 
 	if hook != nil {
 		if err = hook.BeforeRun(tx, isSynced); err != nil {
-			return err
+			return err, canRunCycleInOneTransaction
 		}
 	}
 	err = sync.Run(db, tx, initialCycle)
 	if err != nil {
-		return err
+		return err, canRunCycleInOneTransaction
 	}
 	logCtx := sync.PrintTimings()
 	var tableSizes []interface{}
@@ -178,16 +187,18 @@ func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync
 		errTx := tx.Commit()
 		tx = nil
 		if errTx != nil {
-			return errTx
+			return errTx, canRunCycleInOneTransaction
 		}
 		commitTime = time.Since(commitStart)
+		log.Info("[SPIDERMAN] stageloop 190 committed ", "at", time.Now())
+
 	}
 
 	// -- send notifications START
 	if externalTx {
 		if hook != nil {
 			if err = hook.AfterRun(tx, finishProgressBefore); err != nil {
-				return err
+				return err, canRunCycleInOneTransaction
 			}
 		}
 	} else {
@@ -199,7 +210,7 @@ func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync
 			}
 			return nil
 		}); err != nil {
-			return err
+			return err, canRunCycleInOneTransaction
 		}
 	}
 	if canRunCycleInOneTransaction && !externalTx && commitTime > 500*time.Millisecond {
@@ -215,12 +226,14 @@ func StageLoopStep(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync
 
 	// -- Prune+commit(sync)
 	if err := stageLoopStepPrune(ctx, db, tx, sync, initialCycle); err != nil {
-		return err
+		return err, canRunCycleInOneTransaction
 	}
 
-	return nil
+	return nil, canRunCycleInOneTransaction
 }
 func stageLoopStepPrune(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stagedsync.Sync, initialCycle bool) (err error) {
+	
+	log.Info("[SPIDERMAN] stageloop stageLoopStepPrune")
 	if tx != nil {
 		return sync.RunPrune(db, tx, initialCycle)
 	}
@@ -228,6 +241,8 @@ func stageLoopStepPrune(ctx context.Context, db kv.RwDB, tx kv.RwTx, sync *stage
 }
 
 func stagesHeadersAndFinish(db kv.RoDB, tx kv.Tx) (head, fin uint64, err error) {
+	log.Info("[SPIDERMAN] stageloop stagesHeadersAndFinish")
+	
 	if tx != nil {
 		if fin, err = stages.GetStageProgress(tx, stages.Finish); err != nil {
 			return head, fin, err
@@ -265,6 +280,8 @@ func NewHook(ctx context.Context, notifications *shards.Notifications, sync *sta
 	return &Hook{ctx: ctx, notifications: notifications, sync: sync, blockReader: blockReader, chainConfig: chainConfig, logger: logger, updateHead: updateHead}
 }
 func (h *Hook) BeforeRun(tx kv.Tx, inSync bool) error {
+	log.Info("[SPIDERMAN] stageloop BeforeRun")
+	
 	notifications := h.notifications
 	if notifications != nil && notifications.Accumulator != nil && inSync {
 		stateVersion, err := rawdb.GetStateVersion(tx)
@@ -276,6 +293,8 @@ func (h *Hook) BeforeRun(tx kv.Tx, inSync bool) error {
 	return nil
 }
 func (h *Hook) AfterRun(tx kv.Tx, finishProgressBefore uint64) error {
+	log.Info("[SPIDERMAN] stageloop AfterRun")
+	
 	notifications := h.notifications
 	blockReader := h.blockReader
 	// -- send notifications START
@@ -338,6 +357,7 @@ func MiningStep(ctx context.Context, kv kv.RwDB, mining *stagedsync.Sync, tmpDir
 			err = fmt.Errorf("%+v, trace: %s", rec, dbg.Stack())
 		}
 	}() // avoid crash because Erigon's core does many things
+	log.Info("[SPIDERMAN] stageloop MiningStep")
 
 	tx, err := kv.BeginRo(ctx)
 	if err != nil {
@@ -361,6 +381,7 @@ func StateStep(ctx context.Context, batch kv.RwTx, blockWriter *blockio.BlockWri
 			err = fmt.Errorf("%+v, trace: %s", rec, dbg.Stack())
 		}
 	}() // avoid crash because Erigon's core does many things
+	log.Info("[SPIDERMAN] stageloop StateStep")
 
 	// Construct side fork if we have one
 	if unwindPoint > 0 {
@@ -433,6 +454,7 @@ func NewDefaultStages(ctx context.Context,
 ) []*stagedsync.Stage {
 	dirs := cfg.Dirs
 	blockWriter := blockio.NewBlockWriter(cfg.HistoryV3)
+	log.Info("[SPIDERMAN] stageloop NewDefaultStages")
 
 	// During Import we don't want other services like header requests, body requests etc. to be running.
 	// Hence we run it in the test mode.
@@ -477,6 +499,7 @@ func NewDefaultStages(ctx context.Context,
 func NewInMemoryExecution(ctx context.Context, db kv.RwDB, cfg *ethconfig.Config, controlServer *sentry.MultiClient,
 	dirs datadir.Dirs, notifications *shards.Notifications, blockReader services.FullBlockReader, blockWriter *blockio.BlockWriter, agg *state.AggregatorV3,
 	logger log.Logger) (*stagedsync.Sync, error) {
+		log.Info("[SPIDERMAN] stageloop NewInMemoryExecution")
 
 	return stagedsync.New(
 		stagedsync.StateStages(ctx,

@@ -47,6 +47,8 @@ func StageHashStateCfg(db kv.RwDB, dirs datadir.Dirs, historyV3 bool) HashStateC
 
 func SpawnHashStateStage(s *StageState, tx kv.RwTx, cfg HashStateCfg, ctx context.Context, logger log.Logger) error {
 	useExternalTx := tx != nil
+	log.Info("[SPIDERMAN] stage_hashstate 50 Spawn")
+
 	if !useExternalTx {
 		var err error
 		tx, err = cfg.db.BeginRw(context.Background())
@@ -192,6 +194,8 @@ func promotePlainState(
 	ctx context.Context,
 	logger log.Logger,
 ) error {
+	log.Info("[SPIDERMAN] stage_hashstate 197 promotePlainState")
+
 	accCollector := etl.NewCollector(logPrefix, tmpdir, etl.NewSortableBuffer(etl.BufferOptimalSize), logger)
 	defer accCollector.Close()
 	accCollector.LogLvl(log.LvlTrace)

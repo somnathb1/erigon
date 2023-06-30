@@ -30,6 +30,7 @@ func MiningStages(
 			ID:          stages.MiningCreateBlock,
 			Description: "Mining: construct new block from tx pool",
 			Forward: func(firstCycle bool, badBlockUnwind bool, s *StageState, u Unwinder, tx kv.RwTx, logger log.Logger) error {
+				log.Info("[SPIDERMAN] stageBuilder.go L33 for  SpawnMiningCreateBlockStage ")
 				return SpawnMiningCreateBlockStage(s, tx, createBlockCfg, ctx.Done(), logger)
 			},
 			Unwind: func(firstCycle bool, u *UnwindState, s *StageState, tx kv.RwTx, logger log.Logger) error { return nil },
@@ -39,6 +40,7 @@ func MiningStages(
 			ID:          stages.MiningExecution,
 			Description: "Mining: construct new block from tx pool",
 			Forward: func(firstCycle bool, badBlockUnwind bool, s *StageState, u Unwinder, tx kv.RwTx, logger log.Logger) error {
+				log.Info("[SPIDERMAN] stageBuilder.go L43 for  SpawnMiningCreateBlockStage ")
 				return SpawnMiningExecStage(s, tx, execCfg, ctx.Done(), logger)
 			},
 			Unwind: func(firstCycle bool, u *UnwindState, s *StageState, tx kv.RwTx, logger log.Logger) error { return nil },
@@ -48,6 +50,7 @@ func MiningStages(
 			ID:          stages.HashState,
 			Description: "Hash the key in the state",
 			Forward: func(firstCycle bool, badBlockUnwind bool, s *StageState, u Unwinder, tx kv.RwTx, logger log.Logger) error {
+				log.Info("[SPIDERMAN] stageBuilder.go L53 for  SpawnHashStateStage ")
 				return SpawnHashStateStage(s, tx, hashStateCfg, ctx, logger)
 			},
 			Unwind: func(firstCycle bool, u *UnwindState, s *StageState, tx kv.RwTx, logger log.Logger) error { return nil },
@@ -57,6 +60,7 @@ func MiningStages(
 			ID:          stages.IntermediateHashes,
 			Description: "Generate intermediate hashes and computing state root",
 			Forward: func(firstCycle bool, badBlockUnwind bool, s *StageState, u Unwinder, tx kv.RwTx, logger log.Logger) error {
+				log.Info("[SPIDERMAN] stageBuilder.go L63 for  SpawnIntermediateHashesStage ")
 				stateRoot, err := SpawnIntermediateHashesStage(s, u, tx, trieCfg, ctx, logger)
 				if err != nil {
 					return err
@@ -71,6 +75,7 @@ func MiningStages(
 			ID:          stages.MiningFinish,
 			Description: "Mining: create and propagate valid block",
 			Forward: func(firstCycle bool, badBlockUnwind bool, s *StageState, u Unwinder, tx kv.RwTx, logger log.Logger) error {
+				log.Info("[SPIDERMAN] stageBuilder.go L78 for  SpawnMiningFinishStage ")
 				return SpawnMiningFinishStage(s, tx, finish, ctx.Done(), logger)
 			},
 			Unwind: func(firstCycle bool, u *UnwindState, s *StageState, tx kv.RwTx, logger log.Logger) error { return nil },

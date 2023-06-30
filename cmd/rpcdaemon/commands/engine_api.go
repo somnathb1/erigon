@@ -117,6 +117,7 @@ type EngineImpl struct {
 }
 
 func convertPayloadStatus(ctx context.Context, db kv.RoDB, x *remote.EnginePayloadStatus) (map[string]interface{}, error) {
+	log.Info("[SPIDERMAN] engine_api convertPayloadStatus")
 	json := map[string]interface{}{
 		"status": x.Status.String(),
 	}
@@ -151,6 +152,8 @@ func convertPayloadStatus(ctx context.Context, db kv.RoDB, x *remote.EnginePaylo
 	} else {
 		json["latestValidHash"] = common.Hash{}
 	}
+	log.Info("[SPIDERMAN] engine_api L155 returning from convertPayloadStatus ", json, "status", json["status"])
+	
 	return json, nil
 }
 
@@ -168,6 +171,7 @@ func (e *EngineImpl) ForkchoiceUpdatedV1(ctx context.Context, forkChoiceState *F
 }
 
 func (e *EngineImpl) ForkchoiceUpdatedV2(ctx context.Context, forkChoiceState *ForkChoiceState, payloadAttributes *PayloadAttributes) (map[string]interface{}, error) {
+	log.Info("[SPIDERMAN] RECEIVED REQUEST engine_api ForkchoiceUpdatedV2")
 	return e.forkchoiceUpdated(2, ctx, forkChoiceState, payloadAttributes)
 }
 
@@ -228,12 +232,14 @@ func (e *EngineImpl) forkchoiceUpdated(version uint32, ctx context.Context, fork
 	if err != nil {
 		return nil, err
 	}
+	log.Info("[SPIDERMAN] engine_api L231 received payloadStatus reply from EngineForkchoiceUpdated ", "payloadStatus", payloadStatus)
 
 	json := map[string]interface{}{
 		"payloadStatus": payloadStatus,
 	}
 	addPayloadId(json, reply.PayloadId)
 
+	log.Info("[SPIDERMAN] RETURNING RESPONSE  engine_api ForkchoiceUpdated", "json", json)
 	return json, nil
 }
 
@@ -246,16 +252,19 @@ func (e *EngineImpl) NewPayloadV1(ctx context.Context, payload *ExecutionPayload
 // NewPayloadV2 processes new payloads (blocks) from the beacon chain with withdrawals.
 // See https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_newpayloadv2
 func (e *EngineImpl) NewPayloadV2(ctx context.Context, payload *ExecutionPayload) (map[string]interface{}, error) {
+	log.Info("[SPIDERMAN] RECEIVED REQUEST engine_api NewPayloadV2")
 	return e.newPayload(2, ctx, payload)
 }
 
 // NewPayloadV3 processes new payloads (blocks) from the beacon chain with withdrawals & excess data gas.
 // See https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_newpayloadv3
 func (e *EngineImpl) NewPayloadV3(ctx context.Context, payload *ExecutionPayload) (map[string]interface{}, error) {
+	log.Info("[SPIDERMAN] RECEIVED REQUEST engine_api NewPayloadV3")
 	return e.newPayload(3, ctx, payload)
 }
 
 func (e *EngineImpl) newPayload(version uint32, ctx context.Context, payload *ExecutionPayload) (map[string]interface{}, error) {
+	log.Info("[SPIDERMAN] engine_api L263 newPayload start")
 	if e.internalCL {
 		return nil, errEmbedeedConsensus
 	}
@@ -306,6 +315,7 @@ func (e *EngineImpl) newPayload(version uint32, ctx context.Context, payload *Ex
 		log.Warn("NewPayload", "err", err)
 		return nil, err
 	}
+	log.Info("[SPIDERMAN] engine_api L314 newPayload end")
 	return convertPayloadStatus(ctx, e.db, res)
 }
 

@@ -224,7 +224,9 @@ func HeadersPOS(
 	}
 
 	if requestStatus == engineapi.New && payloadStatus != nil {
+		log.Info("[SPIDERMAN] Status @ stage_headers L227: " + payloadStatus.Status.String())
 		if payloadStatus.Status == remote.EngineStatus_SYNCING || payloadStatus.Status == remote.EngineStatus_ACCEPTED || !useExternalTx {
+			log.Info("[SPIDERMAN] Status writing to PayloadStatusCh L229: " + payloadStatus.Status.String())
 			cfg.hd.PayloadStatusCh <- *payloadStatus
 		} else {
 			// Let the stage loop run to the end so that the transaction is committed prior to replying to CL
@@ -289,6 +291,8 @@ func startHandlingForkChoice(
 	preProgress uint64,
 	logger log.Logger,
 ) (*engineapi.PayloadStatus, error) {
+	log.Info("[SPIDERMAN] stage_headers 293 startHandlinForkChoice")
+
 	defer cfg.forkValidator.ClearWithUnwind(tx, cfg.notifications.Accumulator, cfg.notifications.StateChangesConsumer)
 	headerHash := forkChoice.HeadBlockHash
 	logger.Debug(fmt.Sprintf("[%s] Handling fork choice", s.LogPrefix()), "headerHash", headerHash)
@@ -318,6 +322,7 @@ func startHandlingForkChoice(
 				return nil, err
 			}
 			if canonical {
+				log.Info("[SPIDERMAN] stage_headers.go L322 returning status VALID")
 				return &engineapi.PayloadStatus{
 					Status:          remote.EngineStatus_VALID,
 					LatestValidHash: headerHash,
@@ -331,12 +336,15 @@ func startHandlingForkChoice(
 	}
 
 	if headerNumber == nil {
+		log.Info("[SPIDERMAN] stage_headers.go L336 returning status headerNumber nil")
 		logger.Debug(fmt.Sprintf("[%s] Fork choice: need to download header with hash %x", s.LogPrefix(), headerHash))
 		if test {
 			cfg.hd.BeaconRequestList.Remove(requestId)
 		} else {
+			log.Info("[SPIDERMAN] stage_headers.go L341 calling schedulePoSDownload")
 			schedulePoSDownload(requestId, headerHash, 0 /* header height is unknown, setting to 0 */, headerHash, s, cfg, logger)
 		}
+		log.Info("[SPIDERMAN] stage_headers.go L344 return status SYNCING")
 		return &engineapi.PayloadStatus{Status: remote.EngineStatus_SYNCING}, nil
 	}
 	// Header itself may already be in the snapshots, if CL starts off at much earlier state than Erigon
@@ -354,6 +362,7 @@ func startHandlingForkChoice(
 		} else {
 			schedulePoSDownload(requestId, headerHash, 0 /* header height is unknown, setting to 0 */, headerHash, s, cfg, logger)
 		}
+		log.Info("[SPIDERMAN] stage_headers.go L362 return status SYNCING")
 		return &engineapi.PayloadStatus{Status: remote.EngineStatus_SYNCING}, nil
 	}
 
@@ -384,6 +393,7 @@ func startHandlingForkChoice(
 		return nil, err
 	}
 	if forkingPoint < preProgress {
+		log.Info("[SPIDERMAN] stage_headers.go L393 FORKING")
 
 		logger.Info(fmt.Sprintf("[%s] Fork choice: re-org", s.LogPrefix()), "goal", headerNumber, "from", preProgress, "unwind to", forkingPoint)
 
@@ -391,7 +401,10 @@ func startHandlingForkChoice(
 			if *headerNumber-forkingPoint <= ShortPoSReorgThresholdBlocks {
 				// TODO(yperbasis): what if some bodies are missing and we have to download them?
 				cfg.hd.SetPendingPayloadHash(headerHash)
+				log.Info("[SPIDERMAN] stage_headers.go L401 IF reorg threshold")
+
 			} else {
+				log.Info("[SPIDERMAN] stage_headers.go L404 ELSE SYNCING")
 				cfg.hd.PayloadStatusCh <- engineapi.PayloadStatus{Status: remote.EngineStatus_SYNCING}
 			}
 		}
@@ -420,6 +433,7 @@ func startHandlingForkChoice(
 			return nil, err
 		}
 
+		log.Info("[SPIDERMAN] stage_headers.go L433 retuning VALID")
 		if canonical {
 			return &engineapi.PayloadStatus{
 				Status:          remote.EngineStatus_VALID,
@@ -444,6 +458,8 @@ func finishHandlingForkChoice(
 	useExternalTx bool,
 	logger log.Logger,
 ) error {
+	log.Info("[SPIDERMAN] stage_headers finishHandlingForkChoice")
+
 	logger.Info(fmt.Sprintf("[%s] Unsettled forkchoice after unwind", s.LogPrefix()), "height", headHeight, "forkchoice", forkChoice)
 
 	logEvery := time.NewTicker(logInterval)
@@ -473,6 +489,7 @@ func finishHandlingForkChoice(
 	}
 
 	if !canonical {
+		log.Info("[SPIDERMAN] stage_headers L492 NOT CANONICAL finishHandlingForkChoice")
 		if cfg.hd.GetPendingPayloadHash() != (libcommon.Hash{}) {
 			cfg.hd.PayloadStatusCh <- engineapi.PayloadStatus{
 				CriticalError: &privateapi.InvalidForkchoiceStateErr,
@@ -500,6 +517,7 @@ func handleNewPayload(
 	header := block.Header()
 	headerNumber := header.Number.Uint64()
 	headerHash := block.Hash()
+	log.Info("[SPIDERMAN] stage_headers.go L514 handleNewPayload")
 
 	logger.Info(fmt.Sprintf("[%s] Handling new payload", s.LogPrefix()), "height", headerNumber, "hash", headerHash)
 
@@ -565,6 +583,8 @@ func verifyAndSaveNewPoSHeader(
 	headerInserter *headerdownload.HeaderInserter,
 	logger log.Logger,
 ) (response *engineapi.PayloadStatus, success bool, err error) {
+	log.Info("[SPIDERMAN] stage_headers verifyAndSaveNewPoSHeader")
+
 	header := block.Header()
 	headerNumber := header.Number.Uint64()
 	headerHash := block.Hash()
@@ -615,6 +635,8 @@ func schedulePoSDownload(
 	cfg HeadersCfg,
 	logger log.Logger,
 ) bool {
+	log.Info("[SPIDERMAN] stage_headers.go L631 shedulePoSDownload")
+
 	cfg.hd.BeaconRequestList.SetStatus(requestId, engineapi.DataWasMissing)
 
 	if cfg.hd.PosStatus() != headerdownload.Idle {
@@ -648,6 +670,8 @@ func saveDownloadedPoSHeaders(tx kv.RwTx, cfg HeadersCfg, headerInserter *header
 	var lastValidHash libcommon.Hash
 	var badChainError error
 	var foundPow bool
+	log.Info("[SPIDERMAN] stage_headers saveDownloadedPoSHeaders")
+
 
 	headerLoadFunc := func(key, value []byte, _ etl.CurrentTableReader, _ etl.LoadNextFunc) error {
 		var h types.Header
@@ -725,6 +749,8 @@ func forkingPoint(
 	headerReader services.HeaderReader,
 	header *types.Header,
 ) (uint64, error) {
+	log.Info("[SPIDERMAN] stage_headers forkingPoint")
+
 	headerNumber := header.Number.Uint64()
 	if headerNumber == 0 {
 		return 0, nil
@@ -966,6 +992,7 @@ func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, h
 	}
 	ancestorHash := hash
 	ancestorHeight := height
+	log.Info("[SPIDERMAN] stage_headers fixCanonicalChain")
 
 	var ch libcommon.Hash
 	var err error

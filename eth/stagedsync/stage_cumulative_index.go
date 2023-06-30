@@ -34,6 +34,7 @@ func StageCumulativeIndexCfg(db kv.RwDB, blockReader services.FullBlockReader) C
 
 func SpawnStageCumulativeIndex(cfg CumulativeIndexCfg, s *StageState, tx kv.RwTx, ctx context.Context, logger log.Logger) error {
 	useExternalTx := tx != nil
+	log.Info("[SPIDERMAN] stage_cumulative_index 37 Spawn ")
 
 	if !useExternalTx {
 		var err error

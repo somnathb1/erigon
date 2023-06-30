@@ -8,6 +8,7 @@ import (
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/erigon-lib/common/hexutility"
 	"github.com/ledgerwatch/erigon-lib/gointerfaces"
+	"github.com/ledgerwatch/log/v3"
 	"google.golang.org/grpc"
 
 	"github.com/ledgerwatch/erigon/turbo/rpchelper"
@@ -21,6 +22,7 @@ import (
 
 // GetBalance implements eth_getBalance. Returns the balance of an account for a given address.
 func (api *APIImpl) GetBalance(ctx context.Context, address libcommon.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	log.Info("[SPIDERMAN] RECEIVED REQUEST eth_accounts.go L25 GetBalance")
 	tx, err1 := api.db.BeginRo(ctx)
 	if err1 != nil {
 		return nil, fmt.Errorf("getBalance cannot open tx: %w", err1)
@@ -40,6 +42,7 @@ func (api *APIImpl) GetBalance(ctx context.Context, address libcommon.Address, b
 		return (*hexutil.Big)(big.NewInt(0)), nil
 	}
 
+	log.Info("[SPIDERMAN] Returning result eth_accounts.go L45 GetBalance")
 	return (*hexutil.Big)(acc.Balance.ToBig()), nil
 }
 

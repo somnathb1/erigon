@@ -587,7 +587,7 @@ func (ms *MockSentry) insertPoWBlocks(chain *core.ChainPack, tx kv.RwTx) error {
 	}
 	initialCycle := MockInsertAsInitialCycle
 	hook := NewHook(ms.Ctx, ms.Notifications, ms.Sync, ms.BlockReader, ms.ChainConfig, ms.Log, ms.UpdateHead)
-	if err = StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook); err != nil {
+	if err, _ = StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook); err != nil {
 		return err
 	}
 	if ms.TxPool != nil {
@@ -611,11 +611,11 @@ func (ms *MockSentry) insertPoSBlocks(chain *core.ChainPack, tx kv.RwTx) error {
 
 	initialCycle := MockInsertAsInitialCycle
 	hook := NewHook(ms.Ctx, ms.Notifications, ms.Sync, ms.BlockReader, ms.ChainConfig, ms.Log, ms.UpdateHead)
-	err := StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook)
+	err, _ := StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook)
 	if err != nil {
 		return err
 	}
-	SendPayloadStatus(ms.HeaderDownload(), rawdb.ReadHeadBlockHash(tx), err)
+	SendPayloadStatus(ms.HeaderDownload(), rawdb.ReadHeadBlockHash(tx), err,true)
 	ms.ReceivePayloadStatus()
 
 	fc := engineapi.ForkChoiceMessage{
@@ -624,11 +624,11 @@ func (ms *MockSentry) insertPoSBlocks(chain *core.ChainPack, tx kv.RwTx) error {
 		FinalizedBlockHash: chain.TopBlock.Hash(),
 	}
 	ms.SendForkChoiceRequest(&fc)
-	err = StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook)
+	err, _ = StageLoopStep(ms.Ctx, ms.DB, tx, ms.Sync, initialCycle, ms.Log, ms.BlockReader, hook)
 	if err != nil {
 		return err
 	}
-	SendPayloadStatus(ms.HeaderDownload(), rawdb.ReadHeadBlockHash(tx), err)
+	SendPayloadStatus(ms.HeaderDownload(), rawdb.ReadHeadBlockHash(tx), err,true)
 	ms.ReceivePayloadStatus()
 
 	return nil

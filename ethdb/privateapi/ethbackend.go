@@ -301,6 +301,7 @@ func (s *EthBackendServer) checkWithdrawalsPresence(time uint64, withdrawals []*
 
 // EngineNewPayload validates and possibly executes payload
 func (s *EthBackendServer) EngineNewPayload(ctx context.Context, req *types2.ExecutionPayload) (*remote.EnginePayloadStatus, error) {
+	log.Info("[SPIDERMAN] ethbackend L304 EngineNewPayload start")
 	header := types.Header{
 		ParentHash:  gointerfaces.ConvertH256ToHash(req.ParentHash),
 		Coinbase:    gointerfaces.ConvertH160toAddress(req.Coinbase),
@@ -389,6 +390,7 @@ func (s *EthBackendServer) EngineNewPayload(ctx context.Context, req *types2.Exe
 	s.logger.Debug("[NewPayload] sending block", "height", header.Number, "hash", libcommon.Hash(blockHash))
 	s.hd.BeaconRequestList.AddPayloadRequest(block)
 
+	log.Info("[SPIDERMAN] ethbackend L393 added block to payload request, waiting for PayloadStatusCh ")
 	payloadStatus := <-s.hd.PayloadStatusCh
 	s.logger.Debug("[NewPayload] got reply", "payloadStatus", payloadStatus)
 
@@ -396,6 +398,7 @@ func (s *EthBackendServer) EngineNewPayload(ctx context.Context, req *types2.Exe
 		return nil, payloadStatus.CriticalError
 	}
 
+	log.Info("[SPIDERMAN] ethbackend L304 EngineNewPayload end ", "payloadStatus", payloadStatus)
 	return convertPayloadStatus(&payloadStatus), nil
 }
 
@@ -647,6 +650,7 @@ func (s *EthBackendServer) EngineGetPayload(ctx context.Context, req *remote.Eng
 // engineForkChoiceUpdated either states new block head or request the assembling of a new block
 func (s *EthBackendServer) EngineForkChoiceUpdated(ctx context.Context, req *remote.EngineForkChoiceUpdatedRequest,
 ) (*remote.EngineForkChoiceUpdatedResponse, error) {
+	
 	forkChoice := engineapi.ForkChoiceMessage{
 		HeadBlockHash:      gointerfaces.ConvertH256ToHash(req.ForkchoiceState.HeadBlockHash),
 		SafeBlockHash:      gointerfaces.ConvertH256ToHash(req.ForkchoiceState.SafeBlockHash),
@@ -668,13 +672,48 @@ func (s *EthBackendServer) EngineForkChoiceUpdated(ctx context.Context, req *rem
 		statusDeref := <-s.hd.PayloadStatusCh
 		status = &statusDeref
 		s.logger.Debug("[ForkChoiceUpdated] got reply", "payloadStatus", status)
-
+		log.Info("[SPIDERMAN] ethbackend L671 payloadStatus - " + status.Status.String())
 		if status.CriticalError != nil {
 			return nil, status.CriticalError
 		}
-		if s.stageLoopIsBusy() {
-			status.Status = remote.EngineStatus_SYNCING
-		}
+
+		// isWaiting:= "NO"
+		// if s.hd.BeaconRequestList.IsWaiting() {
+		// 	isWaiting = "YES"
+		// }
+
+		// log.Info("[SPIDERMAN] ethbackend.go L676, BeaconRequestListWaiting? " + isWaiting)
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 1")
+		// } else {
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy FALSE")
+		// }
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 2")
+
+		// }
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 3")
+
+		// }
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 4")
+
+		// }
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 5")
+
+		// }
+		// if s.stageLoopIsBusy() {
+		// 	time.Sleep(50*time.Millisecond)
+		// 	log.Info("[SPIDERMAN] stageLoopIsBusy 6")
+
+		// }
 	}
 
 	// No need for payload building

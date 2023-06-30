@@ -27,6 +27,7 @@ import (
 
 	"github.com/ledgerwatch/erigon-lib/chain"
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
+	"github.com/ledgerwatch/log/v3"
 
 	"github.com/ledgerwatch/erigon/common/math"
 	"github.com/ledgerwatch/erigon/common/u256"
@@ -78,7 +79,7 @@ func ExecuteBlockEphemerally(
 	stateReader state.StateReader, stateWriter state.WriterWithChangeSets,
 	chainReader consensus.ChainHeaderReader, getTracer func(txIndex int, txHash libcommon.Hash) (vm.EVMLogger, error),
 ) (*EphemeralExecResult, error) {
-
+	log.Info("[SPIDERMAN] blockchain 82 ExecuteBlockEphemerally ")
 	defer BlockExecutionTimer.UpdateDuration(time.Now())
 	block.Uncles()
 	ibs := state.New(stateReader)
@@ -320,6 +321,8 @@ func FinalizeBlockExecution(
 	withdrawals []*types.Withdrawal, headerReader consensus.ChainHeaderReader,
 	isMining bool,
 ) (newBlock *types.Block, newTxs types.Transactions, newReceipt types.Receipts, err error) {
+	log.Info("[SPIDERMAN] blockchain 324 FinalizeBlockExecution ")
+	
 	syscall := func(contract libcommon.Address, data []byte) ([]byte, error) {
 		return SysCallContract(contract, data, cc, ibs, header, engine, false /* constCall */)
 	}
@@ -343,6 +346,7 @@ func FinalizeBlockExecution(
 }
 
 func InitializeBlockExecution(engine consensus.Engine, chain consensus.ChainHeaderReader, header *types.Header, txs types.Transactions, uncles []*types.Header, cc *chain.Config, ibs *state.IntraBlockState) error {
+	log.Info("[SPIDERMAN] blockchain 349 InitializeBlockExecution ")
 	engine.Initialize(cc, chain, header, ibs, txs, uncles, func(contract libcommon.Address, data []byte, ibState *state.IntraBlockState, header *types.Header, constCall bool) ([]byte, error) {
 		return SysCallContract(contract, data, cc, ibState, header, engine, constCall)
 	})

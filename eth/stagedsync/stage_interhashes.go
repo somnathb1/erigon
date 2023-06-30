@@ -60,6 +60,8 @@ func StageTrieCfg(db kv.RwDB, checkRoot, saveNewHashesToDB, badBlockHalt bool, t
 
 func SpawnIntermediateHashesStage(s *StageState, u Unwinder, tx kv.RwTx, cfg TrieCfg, ctx context.Context, logger log.Logger) (libcommon.Hash, error) {
 	quit := ctx.Done()
+	log.Info("[SPIDERMAN] stage_indexes SpawnStorageHistoryIndex")
+
 	useExternalTx := tx != nil
 	if !useExternalTx {
 		var err error

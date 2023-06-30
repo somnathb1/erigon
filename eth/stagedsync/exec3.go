@@ -151,6 +151,7 @@ func ExecV3(ctx context.Context,
 	logger log.Logger,
 	initialCycle bool,
 ) error {
+	log.Info("[SPIDERMAN] exec3.go L154 for  ExecV3 entry ")
 	batchSize := cfg.batchSize
 	chainDb := cfg.db
 	blockReader := cfg.blockReader
@@ -260,6 +261,8 @@ func ExecV3(ctx context.Context,
 	defer applyLoopWg.Wait()
 
 	applyLoopInner := func(ctx context.Context) error {
+		log.Info("[SPIDERMAN] exec3.go 264 applyLoopInner ")
+
 		tx, err := chainDb.BeginRo(ctx)
 		if err != nil {
 			return err
@@ -295,6 +298,8 @@ func ExecV3(ctx context.Context,
 		return nil
 	}
 	applyLoop := func(ctx context.Context, errCh chan error) {
+		log.Info("[SPIDERMAN] exec3.go 301  applyLoop")
+
 		defer applyLoopWg.Done()
 		if err := applyLoopInner(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) {
@@ -813,6 +818,7 @@ func reconstituteStep(last bool,
 	chainConfig *chain.Config, logger log.Logger, genesis *types.Genesis, engine consensus.Engine,
 	batchSize datasize.ByteSize, s *StageState, blockNum uint64, total uint64,
 ) error {
+	log.Info("[SPIDERMAN] exec3.go 817 reconstituteStep ")
 	var startOk, endOk bool
 	startTxNum, endTxNum := as.TxNumRange()
 	var startBlockNum, endBlockNum uint64 // First block which is not covered by the history snapshot files
@@ -1335,6 +1341,7 @@ func ReconstituteState(ctx context.Context, s *StageState, dirs datadir.Dirs, wo
 	logger log.Logger, agg *state2.AggregatorV3, engine consensus.Engine,
 	chainConfig *chain.Config, genesis *types.Genesis) (err error) {
 	startTime := time.Now()
+	log.Info("[SPIDERMAN] exec3.go 1340 ReconstituteState ")
 	defer agg.EnableMadvNormal().DisableReadAhead()
 
 	// force merge snapshots before reconstitution, to allign domains progress

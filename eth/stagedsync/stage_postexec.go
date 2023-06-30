@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ledgerwatch/erigon-lib/kv"
+	"github.com/ledgerwatch/log/v3"
 )
 
 // PostExec stage is run after execution stage to peform extra verifications that are only possible when state is available.
@@ -23,6 +24,7 @@ func StagePostExecCfg(db kv.RwDB, borDb kv.RwDB) PostExecCfg {
 }
 
 func SpawnPostExecStage(s *StageState, tx kv.RwTx, cfg PostExecCfg, ctx context.Context) error {
+	log.Info("[SPIDERMAN] stage_postexec 27 Spawn")
 	useExternalTx := tx != nil
 	if !useExternalTx {
 		var err error

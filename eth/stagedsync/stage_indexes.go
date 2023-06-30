@@ -49,6 +49,8 @@ func StageHistoryCfg(db kv.RwDB, prune prune.Mode, tmpDir string) HistoryCfg {
 
 func SpawnAccountHistoryIndex(s *StageState, tx kv.RwTx, cfg HistoryCfg, ctx context.Context, logger log.Logger) error {
 	useExternalTx := tx != nil
+	log.Info("[SPIDERMAN] stage_indexes SpawnStorageHistoryIndex")
+
 	if !useExternalTx {
 		var err error
 		tx, err = cfg.db.BeginRw(ctx)
@@ -96,6 +98,8 @@ func SpawnAccountHistoryIndex(s *StageState, tx kv.RwTx, cfg HistoryCfg, ctx con
 }
 
 func SpawnStorageHistoryIndex(s *StageState, tx kv.RwTx, cfg HistoryCfg, ctx context.Context, logger log.Logger) error {
+	log.Info("[SPIDERMAN] stage_indexes SpawnStorageHistoryIndex")
+
 	useExternalTx := tx != nil
 	if !useExternalTx {
 		var err error
@@ -140,6 +144,7 @@ func SpawnStorageHistoryIndex(s *StageState, tx kv.RwTx, cfg HistoryCfg, ctx con
 func promoteHistory(logPrefix string, tx kv.RwTx, changesetBucket string, start, stop uint64, cfg HistoryCfg, quit <-chan struct{}, logger log.Logger) error {
 	logEvery := time.NewTicker(30 * time.Second)
 	defer logEvery.Stop()
+	log.Info("[SPIDERMAN] stage_indexes promoteHistory")
 
 	updates := map[string]*roaring64.Bitmap{}
 	checkFlushEvery := time.NewTicker(cfg.flushEvery)

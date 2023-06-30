@@ -17,6 +17,7 @@ import (
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/erigon-lib/etl"
 	"github.com/ledgerwatch/erigon-lib/kv"
+	"github.com/ledgerwatch/log/v3"
 	"golang.org/x/exp/slices"
 
 	"github.com/ledgerwatch/erigon/dataflow"
@@ -966,6 +967,7 @@ func (hi *HeaderInserter) BestHeaderChanged() bool {
 
 func (hd *HeaderDownload) ProcessHeader(sh ChainSegmentHeader, newBlock bool, peerID [64]byte) bool {
 	hd.lock.Lock()
+	log.Info("[SPIDERMAN] header_algos ProcessHeader")
 	defer hd.lock.Unlock()
 	if sh.Number > hd.stats.RespMaxBlock {
 		hd.stats.RespMaxBlock = sh.Number
@@ -1034,6 +1036,8 @@ func (hd *HeaderDownload) ProcessHeader(sh ChainSegmentHeader, newBlock bool, pe
 
 func (hd *HeaderDownload) ProcessHeaders(csHeaders []ChainSegmentHeader, newBlock bool, peerID [64]byte) bool {
 	requestMore := false
+	log.Info("[SPIDERMAN] header_algos ProcessHeaders")
+
 	for _, sh := range csHeaders {
 		// Lock is acquired for every invocation of ProcessHeader
 		if hd.ProcessHeader(sh, newBlock, peerID) {
@@ -1208,6 +1212,8 @@ func (hd *HeaderDownload) SetRequestId(requestId int) {
 
 func (hd *HeaderDownload) AddMinedHeader(header *types.Header) error {
 	buf := bytes.NewBuffer(nil)
+	log.Info("[SPIDERMAN] header_algos AddMinedHeader")
+
 	if err := header.EncodeRLP(buf); err != nil {
 		return err
 	}
@@ -1225,6 +1231,7 @@ func (hd *HeaderDownload) AddMinedHeader(header *types.Header) error {
 
 func (hd *HeaderDownload) AddHeadersFromSnapshot(tx kv.Tx, r services.FullBlockReader) error {
 	n := r.FrozenBlocks()
+	log.Info("[SPIDERMAN] header_algos AddHeadersFromSnapshot")
 
 	hd.lock.Lock()
 	defer hd.lock.Unlock()
@@ -1277,6 +1284,8 @@ func (hd *HeaderDownload) StartPoSDownloader(
 	penalize func(context.Context, []PenaltyItem),
 ) {
 	go func() {
+		log.Info("[SPIDERMAN] eth/bakcend 1069 Start - " )
+
 		prevProgress := uint64(0)
 
 		logEvery := time.NewTicker(logInterval)

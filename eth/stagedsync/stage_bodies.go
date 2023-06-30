@@ -58,6 +58,7 @@ func BodiesForward(
 	firstCycle bool,
 	logger log.Logger,
 ) error {
+	log.Info("[SPIDERMAN] stage_bodies 61 ")
 	var doUpdate bool
 	if s.BlockNumber < cfg.blockReader.FrozenBlocks() {
 		s.BlockNumber = cfg.blockReader.FrozenBlocks()
@@ -129,6 +130,7 @@ func BodiesForward(
 	cr := ChainReader{Cfg: cfg.chanConfig, Db: tx, BlockReader: cfg.blockReader}
 
 	loopBody := func() (bool, error) {
+		log.Info("[SPIDERMAN] stage_bodies 133 loopBody ")
 		// loopCount is used here to ensure we don't get caught in a constant loop of making requests
 		// having some time out so requesting again and cycling like that forever.  We'll cap it
 		// and break the loop so we can see if there are any records to actually process further down

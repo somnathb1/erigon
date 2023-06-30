@@ -41,6 +41,7 @@ func StageFinishCfg(db kv.RwDB, tmpDir string, forkValidator *engineapi.ForkVali
 
 func FinishForward(s *StageState, tx kv.RwTx, cfg FinishCfg, initialCycle bool) error {
 	useExternalTx := tx != nil
+	log.Info("[SPIDERMAN] stage_finish 44 FinishForward")
 	if !useExternalTx {
 		var err error
 		tx, err = cfg.db.BeginRw(context.Background())
@@ -126,6 +127,8 @@ func PruneFinish(u *PruneState, tx kv.RwTx, cfg FinishCfg, ctx context.Context) 
 
 func NotifyNewHeaders(ctx context.Context, finishStageBeforeSync uint64, finishStageAfterSync uint64, unwindTo *uint64, notifier ChainEventNotifier, tx kv.Tx, logger log.Logger, blockReader services.FullBlockReader) error {
 	t := time.Now()
+	log.Info("[SPIDERMAN] stage_finish 44 FinishForward")
+
 	if notifier == nil {
 		logger.Trace("RPC Daemon notification channel not set. No headers notifications will be sent")
 		return nil

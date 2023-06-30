@@ -138,6 +138,7 @@ func executeBlock(
 	initialCycle bool,
 	stateStream bool,
 ) error {
+	log.Info("[SPIDERMAN] stage_execute 141 executeBlock")
 	blockNum := block.NumberU64()
 	stateReader, stateWriter, err := newStateReaderWriter(batch, tx, block, writeChangesets, cfg.accumulator, cfg.blockReader, initialCycle, stateStream)
 	if err != nil {
@@ -231,6 +232,7 @@ func newStateReaderWriter(
 
 func ExecBlockV3(s *StageState, u Unwinder, tx kv.RwTx, toBlock uint64, ctx context.Context, cfg ExecuteBlockCfg, initialCycle bool, logger log.Logger) (err error) {
 	workersCount := cfg.syncCfg.ExecWorkerCount
+	log.Info("[SPIDERMAN] stage_execute 235 ExecBlockV3 ")
 	//workersCount := 2
 	if !initialCycle {
 		workersCount = 1
@@ -280,6 +282,7 @@ func ExecBlockV3(s *StageState, u Unwinder, tx kv.RwTx, toBlock uint64, ctx cont
 
 // reconstituteBlock - First block which is not covered by the history snapshot files
 func reconstituteBlock(agg *libstate.AggregatorV3, db kv.RoDB, tx kv.Tx) (n uint64, ok bool, err error) {
+	log.Info("[SPIDERMAN] stage_execute 285 ")
 	sendersProgress, err := senderStageProgress(tx, db)
 	if err != nil {
 		return 0, false, err
@@ -355,6 +358,8 @@ func SpawnExecuteBlocksStage(s *StageState, u Unwinder, tx kv.RwTx, toBlock uint
 		}
 		return nil
 	}
+
+	log.Info("[SPIDERMAN] stage_execute 362 SpawnExecuteBlockStage ")
 
 	quit := ctx.Done()
 	useExternalTx := tx != nil

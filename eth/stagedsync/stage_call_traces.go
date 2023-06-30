@@ -47,6 +47,8 @@ func StageCallTracesCfg(
 }
 
 func SpawnCallTraces(s *StageState, tx kv.RwTx, cfg CallTracesCfg, ctx context.Context, logger log.Logger) error {
+	log.Info("[SPIDERMAN] stage_call_traces 50 Spawn")
+
 	useExternalTx := tx != nil
 	if !useExternalTx {
 		var err error

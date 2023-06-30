@@ -192,6 +192,8 @@ func splitAddrIntoHostAndPort(addr string) (host string, port int, err error) {
 // New creates a new Ethereum object (including the
 // initialisation of the common Ethereum object)
 func New(stack *node.Node, config *ethconfig.Config, logger log.Logger) (*Ethereum, error) {
+	log.Info("[SPIDERMAN] eth/bakcend 195 New - " )
+	
 	config.Snapshot.Enabled = config.Sync.UseSnapshots
 	if config.Miner.GasPrice == nil || config.Miner.GasPrice.Cmp(libcommon.Big0) <= 0 {
 		logger.Warn("Sanitizing invalid miner gas price", "provided", config.Miner.GasPrice, "updated", ethconfig.Defaults.Miner.GasPrice)
@@ -414,6 +416,8 @@ func New(stack *node.Node, config *ethconfig.Config, logger log.Logger) (*Ethere
 
 	inMemoryExecution := func(batch kv.RwTx, header *types.Header, body *types.RawBody, unwindPoint uint64, headersChain []*types.Header, bodiesChain []*types.RawBody,
 		notifications *shards.Notifications) error {
+		log.Info("[SPIDERMAN] eth/bakcend 419 inMemoryExecution - " )
+
 		// Needs its own notifications to not update RPC daemon and txpool about pending blocks
 		stateSync, err := stages2.NewInMemoryExecution(backend.sentryCtx, backend.chainDB, config, backend.sentriesClient,
 			dirs, notifications, blockReader, blockWriter, backend.agg, log.New() /* logging will be discarded */)
@@ -525,8 +529,11 @@ func New(stack *node.Node, config *ethconfig.Config, logger log.Logger) (*Ethere
 		ethashApi = casted.APIs(nil)[1].Service.(*ethash.API)
 	}
 
+	log.Info("[SPIDERMAN] eth/bakcend 532 begin PoS mining - " )
 	// proof-of-stake mining
 	assembleBlockPOS := func(param *core.BlockBuilderParameters, interrupt *int32) (*types.BlockWithReceipts, error) {
+		log.Info("[SPIDERMAN] eth/bakcend 535 assembleBlockPOS - " )
+		
 		miningStatePos := stagedsync.NewProposingState(&config.Miner)
 		miningStatePos.MiningConfig.Etherbase = param.SuggestedFeeRecipient
 		proposingSync := stagedsync.New(
@@ -705,6 +712,8 @@ func New(stack *node.Node, config *ethconfig.Config, logger log.Logger) (*Ethere
 	return backend, nil
 }
 func (s *Ethereum) Init(stack *node.Node, config *ethconfig.Config) error {
+	log.Info("[SPIDERMAN] eth/bakcend 708 Init - " )
+
 	ethBackendRPC, miningRPC, stateDiffClient := s.ethBackendRPC, s.miningRPC, s.stateChangesClient
 	blockReader := s.blockReader
 	ctx := s.sentryCtx
@@ -762,6 +771,8 @@ func (s *Ethereum) Init(stack *node.Node, config *ethconfig.Config) error {
 			s.logger.Error(err.Error())
 			return
 		}
+		log.Info("[SPIDERMAN] eth/bakcend 767 started RPC server - " )
+
 	}()
 
 	// Register the backend on the node
@@ -1066,6 +1077,8 @@ func (s *Ethereum) Protocols() []p2p.Protocol {
 // Start implements node.Lifecycle, starting all internal goroutines needed by the
 // Ethereum protocol implementation.
 func (s *Ethereum) Start() error {
+	log.Info("[SPIDERMAN] eth/bakcend 1069 Start - " )
+
 	s.sentriesClient.StartStreamLoops(s.sentryCtx)
 	time.Sleep(10 * time.Millisecond) // just to reduce logs order confusion
 
@@ -1115,6 +1128,8 @@ func (s *Ethereum) Stop() error {
 		s.agg.Close()
 	}
 	s.chainDB.Close()
+	log.Info("[SPIDERMAN] eth/bakcend 1120 Stop - " )
+
 	return nil
 }
 

@@ -80,6 +80,8 @@ func StageMiningExecCfg(
 // TODO:
 // - resubmitAdjustCh - variable is not implemented
 func SpawnMiningExecStage(s *StageState, tx kv.RwTx, cfg MiningExecCfg, quit <-chan struct{}, logger log.Logger) error {
+	log.Info("[SPIDERMAN] stage_mining_exec 83 Spawn")
+
 	cfg.vmConfig.NoReceipts = false
 	chainID, _ := uint256.FromBig(cfg.chainConfig.ChainID)
 	logPrefix := s.LogPrefix()

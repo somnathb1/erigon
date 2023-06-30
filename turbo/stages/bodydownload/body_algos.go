@@ -27,6 +27,8 @@ const BlockBufferSize = 128
 // UpdateFromDb reads the state of the database and refreshes the state of the body download
 func (bd *BodyDownload) UpdateFromDb(db kv.Tx) (headHeight, headTime uint64, headHash libcommon.Hash, headTd256 *uint256.Int, err error) {
 	var headerProgress, bodyProgress uint64
+	log.Info("[SPIDERMAN] body_algos UpdateFromDb")
+	
 	headerProgress, err = stages.GetStageProgress(db, stages.Headers)
 	if err != nil {
 		return 0, 0, libcommon.Hash{}, nil, err
@@ -80,6 +82,7 @@ func (bd *BodyDownload) RequestMoreBodies(tx kv.RwTx, blockReader services.FullB
 	var bodyReq *BodyRequest
 	blockNums := make([]uint64, 0, BlockBufferSize)
 	hashes := make([]libcommon.Hash, 0, BlockBufferSize)
+	log.Info("[SPIDERMAN] body_algos RequestMoreBodies")
 
 	for blockNum := bd.requestedLow; len(blockNums) < BlockBufferSize && blockNum < bd.maxProgress; blockNum++ {
 		if bd.delivered.Contains(blockNum) {
@@ -194,6 +197,7 @@ func (bd *BodyDownload) checkPrefetchedBlock(hash libcommon.Hash, tx kv.RwTx, bl
 	if body == nil {
 		return false
 	}
+	log.Info("[SPIDERMAN] body_algos checkPrefetchedBlock")
 
 	// Block is prefetched, no need to request
 	bd.deliveriesH[blockNum] = header

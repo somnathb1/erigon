@@ -144,6 +144,8 @@ func (fv *ForkValidator) FlushExtendingFork(tx kv.RwTx, accumulator *shards.Accu
 // if the payload is a fork then we unwind to the point where the fork meet the canonical chain and we check if it is valid or not from there.
 // if for any reasons none of the action above can be performed due to lack of information, we accept the payload and avoid validation.
 func (fv *ForkValidator) ValidatePayload(tx kv.RwTx, header *types.Header, body *types.RawBody, extendCanonical bool) (status remote.EngineStatus, latestValidHash libcommon.Hash, validationError error, criticalError error) {
+	log.Info("[SPIDERMAN] fork_validator ValidatePayload")
+
 	fv.lock.Lock()
 	defer fv.lock.Unlock()
 	if fv.validatePayload == nil {
@@ -271,8 +273,11 @@ func (fv *ForkValidator) ClearWithUnwind(tx kv.RwTx, accumulator *shards.Accumul
 // validateAndStorePayload validate and store a payload fork chain if such chain results valid.
 func (fv *ForkValidator) validateAndStorePayload(tx kv.RwTx, header *types.Header, body *types.RawBody, unwindPoint uint64, headersChain []*types.Header, bodiesChain []*types.RawBody,
 	notifications *shards.Notifications) (status remote.EngineStatus, latestValidHash libcommon.Hash, validationError error, criticalError error) {
+		log.Info("[SPIDERMAN] fork_validator 274 validateAndStorePayload")
+	
 	validationError = fv.validatePayload(tx, header, body, unwindPoint, headersChain, bodiesChain, notifications)
 	latestValidHash = header.Hash()
+	
 	if validationError != nil {
 		latestValidHash = header.ParentHash
 		status = remote.EngineStatus_INVALID

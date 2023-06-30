@@ -214,7 +214,7 @@ func (s *Sync) RunUnwind(db kv.RwDB, tx kv.RwTx) error {
 func (s *Sync) Run(db kv.RwDB, tx kv.RwTx, firstCycle bool) error {
 	s.prevUnwindPoint = nil
 	s.timings = s.timings[:0]
-
+	log.Info("[SPIDERMAN] sync.go 217 Run ")
 	for !s.IsDone() {
 		var badBlockUnwind bool
 		if s.unwindPoint != nil {
@@ -247,6 +247,8 @@ func (s *Sync) Run(db kv.RwDB, tx kv.RwTx, firstCycle bool) error {
 
 		stage := s.stages[s.currentStage]
 
+		log.Info("[SPIDERMAN] sync L250 Stage run ", stage.ID)
+
 		if string(stage.ID) == dbg.StopBeforeStage() { // stop process for debugging reasons
 			s.logger.Warn("STOP_BEFORE_STAGE env flag forced to stop app")
 			return libcommon.ErrStopped
@@ -276,6 +278,8 @@ func (s *Sync) Run(db kv.RwDB, tx kv.RwTx, firstCycle bool) error {
 	}
 
 	s.currentStage = 0
+	log.Info("[SPIDERMAN] sync Stages run END")
+
 	return nil
 }
 func (s *Sync) RunPrune(db kv.RwDB, tx kv.RwTx, firstCycle bool) error {
@@ -356,7 +360,9 @@ func (s *Sync) runStage(stage *Stage, db kv.RwDB, tx kv.RwTx, firstCycle bool, b
 	if err != nil {
 		return err
 	}
+	log.Info("[SPIDERMAN] sync.go  runStage ", "stageState", stageState)
 
+	
 	if err = stage.Forward(firstCycle, badBlockUnwind, stageState, s, tx, s.logger); err != nil {
 		wrappedError := fmt.Errorf("[%s] %w", s.LogPrefix(), err)
 		s.logger.Debug("Error while executing stage", "err", wrappedError)

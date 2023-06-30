@@ -30,6 +30,7 @@ func StageBlockHashesCfg(db kv.RwDB, tmpDir string, cc *chain.Config, headerWrit
 
 func SpawnBlockHashStage(s *StageState, tx kv.RwTx, cfg BlockHashesCfg, ctx context.Context, logger log.Logger) (err error) {
 	useExternalTx := tx != nil
+	log.Info("[SPIDERMAN] stage_blockhashes 33 Spawn")
 	if !useExternalTx {
 		tx, err = cfg.db.BeginRw(ctx)
 		if err != nil {

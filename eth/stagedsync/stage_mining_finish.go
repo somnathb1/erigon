@@ -42,6 +42,7 @@ func StageMiningFinishCfg(
 func SpawnMiningFinishStage(s *StageState, tx kv.RwTx, cfg MiningFinishCfg, quit <-chan struct{}, logger log.Logger) error {
 	logPrefix := s.LogPrefix()
 	current := cfg.miningState.MiningBlock
+	log.Info("[SPIDERMAN] stage_mining_finish 45 Spawn")
 
 	// Short circuit when receiving duplicate result caused by resubmitting.
 	//if w.chain.HasBlock(block.Hash(), block.NumberU64()) {
